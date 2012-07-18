@@ -9,8 +9,14 @@ module Math.GameTheory.Common(
 import TypeLevel.NaturalNumber
 import Math.GameTheory.Internal.Common
   
--- | Constructing outcomes in a game. 
 class (NaturalNumber n) => GamePos a n | n -> a where
+  {- | 
+    Construct outcomes and positions in a game. 
+    
+    Simply chain applications together:
+
+    @5.0 \<\\\> 3.0 \<\\\> 4.0@
+  -}
   (<\>) :: Double -> a -> (Pos Double n)
   
 infixr 5 <\>

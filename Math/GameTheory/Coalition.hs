@@ -1,0 +1,3 @@
+-- Coalitional games.
+-- Core, Least Core, Nucleolus, Shapley value
+-- 

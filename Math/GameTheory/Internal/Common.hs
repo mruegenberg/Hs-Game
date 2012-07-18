@@ -1,7 +1,8 @@
 -- | Definitions for internal use.
 
 module Math.GameTheory.Internal.Common (
-  Pos(..)
+    Pos(..)
+  , yank
   ) where
 
 import Data.Ix
@@ -19,3 +20,9 @@ instance (Ix a, NaturalNumber n, Ord n) => Ix (Pos a n) where
     (Just i) -> i
     Nothing -> 0
   inRange (Pos g1 n, Pos g2 _) (Pos g3 _) = (and (zipWith (<=) g1 g3)) && (and (zipWith (<=) g3 g2))
+  
+yank :: Int -> [a] -> (a, [a])
+yank 0 (x:xs) = (x, xs)
+yank n l =
+    let (a, (b:c)) = splitAt n l
+    in  (b, (a ++ c))

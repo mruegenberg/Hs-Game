@@ -46,3 +46,8 @@ testGame = Decision "P1" $ Map.fromList $ [
       ("c2" -|-"P1"|> Map.fromList ["g1" -|> 1 <\> 1,"g2" -|> 0 <\> 2])
       ])
   ]
+           
+-- toNormalForm :: Game -> NF.Game
+
+-- Nash Equ
+-- Subgame-perfect equs
