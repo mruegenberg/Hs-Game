@@ -31,7 +31,7 @@ appendPos g@(Pos l n) v = insertPos g (length l) v
 --------------------
     
 stackelberg1 :: Game N2
-stackelberg1 = mkGame2 [[1 <\> 3, 3 <\> 2],
+stackelberg1 = mkGame2 [[1 <\> 3, 3 <\> 1],
                         [0 <\> 0, 2 <\> 1]]
                
 stackelberg2 :: Game N2

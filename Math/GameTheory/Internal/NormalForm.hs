@@ -21,5 +21,5 @@ data (NaturalNumber n) => Game n = Game (Array (Pos Int n) (Pos Double n))
 
 insertPos :: (NaturalNumber n) => (Pos a n) -> Int -> a -> Pos a (SuccessorTo n)
 insertPos (Pos l n) i v = Pos (insertAt v l (i-1)) (successorTo n)
-  where insertAt v l 0 = v : l
-        insertAt v (l:ls) n = l : (insertAt v ls (n-1))
+  where insertAt x (l':lst) n' | n' > 0 = l' : (insertAt x lst (n'-1))
+        insertAt x lst _ = x : lst
