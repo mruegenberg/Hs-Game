@@ -52,7 +52,7 @@ utility (Game arr) pos = arr ! pos
 
 -- | Extract the utility for a specific player from the utilities for all player at a position
 playerUtility :: (NaturalNumber n) => Pos Double n -> Player -> Double
-playerUtility (Pos l n) p = l !! (p - 1)
+playerUtility (Pos l _) p = l !! (p - 1)
 
 -- a default position. for use with replaceAt
 defaultPos :: (NaturalNumber n, Ord n) => Game n -> (Pos Int n)
@@ -63,14 +63,14 @@ replacePos (Pos l n) i v = Pos (replaceAt v l i) n
 
 replaceAt :: a -> [a] -> Int -> [a]
 replaceAt _ [] _ = []
-replaceAt y (x:xs) 0 = y:xs
+replaceAt y (_:xs) 0 = y:xs
 replaceAt y (x:xs) i = x : (replaceAt y xs (i - 1))
 
 -- | Expected utility of some player for a strategy profile of all players
 expectedUtility :: (NaturalNumber n, Ord n) => Game n -> Player -> Pos Strategy n -> Double
-expectedUtility g@(Game arr) player (Pos strategies n) = go 0 (defaultPos g) strategies
+expectedUtility g player (Pos strategies _) = go 0 (defaultPos g) strategies
   where -- go :: (NaturalNumber n, Ord n) => Pos Int n -> [t] -> Double
-        go j pos [] = playerUtility (utility g pos) player
+        go _ pos [] = playerUtility (utility g pos) player
         go j pos (x:xs) = sum $ map (\(i,y) -> y * (go (j + 1) (replacePos pos j i) xs)) (zip [1..] x)
         
         
@@ -109,7 +109,7 @@ maxiMin game player = (secLevel, probabilities)
                       (map constraint otherDs) -- [-1, ...] :=>: 0 for each row/column
         nonzero d i = ((take i zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
         (ownD,otherDs',n) = case dims game of
-          (Pos ds n) -> case yank (player - 1) ds of (a,b) -> (a,b,n)
+          (Pos ds n') -> case yank (player - 1) ds of (a,b) -> (a,b,n')
           
         constraint pos' = ((-1) : map (\ownIdx -> playerUtility 
                                                  (utility game (insertPos pos' player ownIdx)) player)
@@ -121,11 +121,10 @@ maxiMin game player = (secLevel, probabilities)
         zeros     = repeat 0
         
 ----------- Dominance -----------
-        
 -- | Checks if an action of a player is dominated in the game
 dominated :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Player -> Action -> Bool
-dominated game@(Game arr) player action = val < 1
-  where (val, probs') = case simplex problem constraints [] of
+dominated game player action = val < 1
+  where (val, _) = case simplex problem constraints [] of
           Optimal r -> r
           _ -> undefined
           

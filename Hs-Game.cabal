@@ -51,7 +51,8 @@ Library
 
   -- Modules exported by the library.
   Exposed-modules:     Math.GameTheory.Common,
-                       Math.GameTheory.NormalForm
+                       Math.GameTheory.NormalForm,
+                       Math.GameTheory.Coalition,
                        Math.GameTheory.Extensive
   
   -- Packages needed in order to build this package.
