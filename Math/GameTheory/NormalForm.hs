@@ -91,6 +91,9 @@ mkGame3 payoffs =
           dimCol = length $ head $ head payoffs
           dimMat = length $ payoffs
           
+-- TODO: n-player game
+-- mkGame :: (NaturalNumber n) => n -> [] -> Game n
+          
           
           
 ---------------------- Algorithms ----------------------
@@ -138,10 +141,11 @@ dominated game player action = val < 1
         nonzero d i = ((take i zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
         zeros       = repeat 0
                       
-        constraint pos' = (map (\ownIdx -> playerUtility (utility game pos) player) [1..ownD])
+        constraint pos' = (map (\ownIdx -> playerUtility (utility game (otherPos ownIdx)) player) [1..ownD])
                           :=>: (playerUtility (utility game pos) player)
             where 
-              pos = (insertPos pos' player action)
+              pos = insertPos pos' player action
+              otherPos j = insertPos pos' player j
                       
         go [] = [[]]
         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)  
