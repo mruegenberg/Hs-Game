@@ -2,7 +2,8 @@ Hs-Game
 =======
 A Haskell library for basic game theory.
 
-Inspired by the course /Algorithmic Game Theory/ at Technische Universität München (TUM). The library provides datatypes for normal form games and extensive form games as well as a selection of algorithms.
+Inspired by the course *Algorithmic Game Theory* at Technische Universität München (TUM). 
+The library provides datatypes for normal form games and extensive form games as well as a selection of algorithms.
 
 
 TODO
