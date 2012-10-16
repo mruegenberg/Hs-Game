@@ -1,3 +1,5 @@
+{-# LANGUAGE DatatypeContexts #-}
+
 -- | Definitions for internal use.
 
 module Math.GameTheory.Internal.Common (
@@ -6,10 +8,13 @@ module Math.GameTheory.Internal.Common (
   ) where
 
 import Data.Ix
-import Data.List(elemIndex)
+import Data.List(elemIndex, intercalate)
 import TypeLevel.NaturalNumber
 
-data (NaturalNumber n) => Pos a n = Pos [a] n deriving (Ord, Eq, Show)
+data (NaturalNumber n) => Pos a n = Pos [a] n deriving (Ord, Eq)
+
+instance (Show a, NaturalNumber n) => Show (Pos a n) where
+  show (Pos elms _) = intercalate " \\ " $ map show elms
 
 instance (Ix a, NaturalNumber n, Ord n) => Ix (Pos a n) where
   range (Pos g1 n, Pos g2 _) = go n (zipWith (curry range) g1 g2)

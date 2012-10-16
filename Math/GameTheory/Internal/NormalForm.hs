@@ -1,3 +1,5 @@
+{-# LANGUAGE DatatypeContexts #-}
+
 module Math.GameTheory.Internal.NormalForm (
   module Math.GameTheory.Common,
   module Math.GameTheory.Internal.Common,
@@ -10,13 +12,18 @@ import Math.GameTheory.Common
 import Math.GameTheory.Internal.Common
 import Data.Array
 import TypeLevel.NaturalNumber
+import Data.List(intercalate)
 
 
 -- | The main game type. Usually, use the `mkGame` functions to construct a game.
 data (NaturalNumber n) => Game n = Game (Array (Pos Int n) (Pos Double n))
-          deriving Show
--- TODO: Proper (custom) "Show" Instance?
--- TODO: Eq instance? (Needed?)
+
+-- FIXME: this is not yet right for games with more than 2 dimensions
+instance (NaturalNumber n, Ord n) => Show (Game n) where
+  show (Game arr) = dropWhile (== '\n') (concatMap mapPos (assocs arr))
+    where mapPos ((Pos idx _),vals) = (if null sp then sp else sp ++ "|") ++ " " ++ (show vals) ++ " |"
+            where sp = spaces (tail idx)
+          spaces = foldr (\i l -> if i == 1 then '\n' : l else l) []
 
 
 insertPos :: (NaturalNumber n) => (Pos a n) -> Int -> a -> Pos a (SuccessorTo n)
