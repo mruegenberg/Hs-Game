@@ -1,4 +1,4 @@
-{-# LANGUAGE DatatypeContexts #-}
+{-# LANGUAGE GADTs, StandaloneDeriving #-}
 
 -- | Definitions for internal use.
 
@@ -11,7 +11,11 @@ import Data.Ix
 import Data.List(elemIndex, intercalate)
 import TypeLevel.NaturalNumber
 
-data (NaturalNumber n) => Pos a n = Pos [a] n deriving (Ord, Eq)
+data Pos a n where 
+  Pos :: (NaturalNumber n) => [a] -> n -> Pos a n 
+  
+deriving instance (Eq a, Eq n) => Eq (Pos a n)
+deriving instance (Ord a, Ord n) => Ord (Pos a n)
 
 instance (Show a, NaturalNumber n) => Show (Pos a n) where
   show (Pos elms _) = intercalate " \\ " $ map show elms

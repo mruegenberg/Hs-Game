@@ -1,4 +1,4 @@
-{-# LANGUAGE DatatypeContexts #-}
+{-# LANGUAGE GADTs #-}
 
 module Math.GameTheory.Internal.NormalForm (
   module Math.GameTheory.Common,
@@ -16,7 +16,8 @@ import Data.List(intercalate)
 
 
 -- | The main game type. Usually, use the `mkGame` functions to construct a game.
-data (NaturalNumber n) => Game n = Game (Array (Pos Int n) (Pos Double n))
+data Game n where 
+  Game :: (NaturalNumber n) => (Array (Pos Int n) (Pos Double n)) -> Game n
 
 -- FIXME: this is not yet right for games with more than 2 dimensions
 instance (NaturalNumber n, Ord n) => Show (Game n) where
