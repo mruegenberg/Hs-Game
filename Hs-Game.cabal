@@ -14,6 +14,8 @@ Synopsis:            A library for basic game theory
 
 -- A longer description of the package.
 Description:         Inspired by the course /Algorithmic Game Theory/ at Technische Universität München (TUM). The library provides datatypes for normal form games and extensive form games as well as a selection of algorithms.
+		     
+		     This package is currently experimental and not well-tested.
 
 -- URL for the project homepage or repository.
 Homepage:            https://github.com/mruegenberg/Hs-Game

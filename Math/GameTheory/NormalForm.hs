@@ -22,6 +22,8 @@ module Math.GameTheory.NormalForm (
   -- $stackelberg
   , stackelbergMixedCommitment
   -- ** Nash Equilibrium
+  , pureNash
+  , mixedNash
   )
   where
 
@@ -30,6 +32,7 @@ import Math.GameTheory.Common
 import TypeLevel.NaturalNumber
 import Data.Array
 import Numeric.LinearProgramming
+import Data.List((\\))
 
 ---------------------- Definitions ----------------------
 
@@ -125,6 +128,35 @@ maxiMin game player = (secLevel, probabilities)
         
 ----------- Dominance -----------
 -- | Checks if an action of a player is dominated in the game
+-- dominated :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Player -> Action -> Bool
+-- dominated game player action = val < 1
+--   where (val, _) = case simplex problem constraints [] of
+--           Optimal r -> r
+--           _ -> undefined
+          
+--         -- variables in the LP are s_i(b_i), and their sum should be minimized
+--         problem = Minimize (take ownD $ repeat 1)
+        
+--         constraints = Dense $
+--                       (map (nonzero ownD) [1..ownD]) ++ -- s_i(b_i) >= 0 forall b_i
+--                       (map constraint otherDs)
+                      
+--         nonzero d i = ((take i zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
+--         zeros       = repeat 0
+
+--         constraint pos' = (map (\ownIdx -> playerUtility (utility game (otherPos ownIdx)) player) [1..ownD]) -- FIXME: a bug here... used to be pos instead of (otherPos ownIdx)
+--                           :=>: (playerUtility (utility game pos) player)
+--             where 
+--               pos = insertPos pos' player action
+--               otherPos j = insertPos pos' player j
+                      
+--         go [] = [[]]
+--         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)  
+--         otherDs           = map (\d -> Pos d (predecessorOf n)) $ go $ map (\i -> [1..i]) otherDs'
+--         (ownD,otherDs',n) = case dims game of
+--           (Pos ds n') -> case yank (player - 1) ds of (a,b) -> (a,b,n')
+                        
+-- | Checks if an action of a player is dominated in the game
 dominated :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Player -> Action -> Bool
 dominated game player action = val < 1
   where (val, _) = case simplex problem constraints [] of
@@ -132,21 +164,31 @@ dominated game player action = val < 1
           _ -> undefined
           
         -- variables in the LP are s_i(b_i), and their sum should be minimized
-        problem = Minimize (take ownD $ repeat 1)
+        -- i.e minimize over all possible values for strategies
+        -- one strategy for each action
+        problem = Minimize (ones ownD)
+        ones i | i <= 0 = []
+        ones i = 1 : (ones (i - 1))
         
         constraints = Dense $
                       (map (nonzero ownD) [1..ownD]) ++ -- s_i(b_i) >= 0 forall b_i
                       (map constraint otherDs)
                       
-        nonzero d i = ((take i zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
-        zeros       = repeat 0
-                      
-        constraint pos' = (map (\ownIdx -> playerUtility (utility game (otherPos ownIdx)) player) [1..ownD])
-                          :=>: (playerUtility (utility game pos) player)
-            where 
-              pos = insertPos pos' player action
-              otherPos j = insertPos pos' player j
-                      
+        nonzero d i = ((take (i - 1) zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
+        zeros       = repeat 0              
+        
+        -- for each a_{-i} \in A_{-i}: 
+        --     \sum_{b_i \in A_i} s_i(b_i) * u_i(b_i,a_{-i})    >=   u_i(a_i,a_-i)
+        -- s_i(b_i) is implicit, see the constraints for s_i(b_i) >= 0
+        constraint otherActions = (map (\b_i -> playerUtility (utility game (otherPos b_i)) player) ownActions) 
+                                   :=>: (playerUtility (utility game pos) player) -- u_i(a_i, a_{-i})
+          where
+            pos = insertPos otherActions player action -- a_i,a_{-i}
+            otherPos b_i = insertPos otherActions player b_i
+            ownActions = [1..ownD]
+            
+        -- FIXME: the following lines were just copy-pasted. explain them.
+        -- FIXME: infinite loop here?
         go [] = [[]]
         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)  
         otherDs           = map (\d -> Pos d (predecessorOf n)) $ go $ map (\i -> [1..i]) otherDs'
@@ -163,23 +205,25 @@ eliminate (Game arr) (player, action) =
     (lowerBound,Pos upperBound n) = bounds arr
     (restBounds',playerBound:restBounds'') = splitAt (player - 1) upperBound
     upperBound' = Pos (restBounds' ++ ((playerBound - 1) : restBounds'')) n
-    
+          
 -- TODO: change the game type so that it makes sense to return the game with the dominated actions eliminated as well
 -- | Iterated strict dominance. Returns for each player the list of dominated actions
 iteratedDominance :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Pos [Action] (SuccessorTo n)
 iteratedDominance origGame = iteratedDominance' origGame
   where
-    iteratedDominance' game = Pos dominatedActions'' n
+    iteratedDominance' game = if all (null . snd) dominatedActions 
+                              then Pos (map snd dominatedActions) n 
+                              else Pos dominatedActions'' n
       where
         (dimensions,n) = case dims game of (Pos ds n') -> (ds,n')
         actions = map (\d -> [1..d]) dimensions
-        dominatedActions = map (\(i,actions') -> (i,filter (dominated game i) actions')) $ 
+        dominatedActions = map (\(i,actions') -> (i,filter (dominated game i) actions')) $ -- FIXME: Infinite loop here
                            zip [1..] actions 
         gameEliminatedActions = foldl 
                                 (\g (i,actions') -> elimActions g i actions') 
                                 game dominatedActions
         elimActions g i actions' = foldl (\g' action -> eliminate g' (i, action)) g actions'
-        (Pos dominatedActions' _) = iteratedDominance' gameEliminatedActions
+        Pos dominatedActions' _ = iteratedDominance' gameEliminatedActions
         dominatedActions'' = zipWith 
                              (\dAs dAs' -> dAs ++ (shift dAs dAs')) 
                              (map snd dominatedActions) dominatedActions'
@@ -235,10 +279,27 @@ stackelbergMixedCommitment game leader =
 ----------- Nash Equilibrium -----------
 
 
-    
+-- FIXME: results are not yet correct. need to eliminate outcomes where anyone might _unilaterally_ deviate
 -- | Find all pure strategy Nash equilibria
-pureNash :: (NaturalNumber n, Ord n) => Game n -> Pos Action n
-pureNash _ = undefined
+pureNash :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> [Pos Action (SuccessorTo n)]
+pureNash g@(Game arr) = equilibriumOutcomes
+  where (Pos dimensions n) = dims g
+        actions = map (\x -> [1..x]) dimensions
+        -- outcomes = map (\x -> Pos x n) (crossProduct actions)
+        (Pos dominated _) = iteratedDominance g
+        undominated = zipWith (\as ds -> as \\ ds) actions dominated
+        equilibriumOutcomes = map (flip Pos n) (crossProduct undominated)
+        
+        
+{-
+For each player, look at all possible outcomes for that player when the actions of other players are fixed and remove those that are strictly less than the maximum.
+The Nash equilibria are the remaining outcomes.
+-}
+
+crossProduct :: [[a]] -> [[a]]
+crossProduct [] = [[]]
+crossProduct (x:xs) = concatMap (\y -> map (: y) x) (crossProduct xs)
+
 
 -- http://oyc.yale.edu/sites/default/files/mixed_strategies_handout_0.pdf
 
