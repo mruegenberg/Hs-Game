@@ -12,7 +12,6 @@ import Math.GameTheory.Common
 import Math.GameTheory.Internal.Common
 import Data.Array
 import TypeLevel.NaturalNumber
-import Data.List(intercalate)
 
 
 -- | The main game type. Usually, use the `mkGame` functions to construct a game.

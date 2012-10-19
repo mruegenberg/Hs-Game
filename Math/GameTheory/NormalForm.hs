@@ -60,8 +60,8 @@ playerUtility :: (NaturalNumber n) => Pos Double n -> Player -> Double
 playerUtility (Pos l _) p = l !! (p - 1)
 
 -- a default position. for use with replaceAt
-defaultPos :: (NaturalNumber n, Ord n) => Game n -> (Pos Int n)
-defaultPos game = dims game
+-- defaultPos :: (NaturalNumber n, Ord n) => Game n -> (Pos Int n)
+-- defaultPos game = dims game
 
 replacePos ::  (NaturalNumber n) => (Pos Int n) -> Player -> Int -> (Pos Int n)
 replacePos (Pos l n) player v = Pos (replaceAt v l (player - 1)) n
@@ -81,7 +81,7 @@ expectedUtility g player (Pos strategies _) = sum weightedUtilities
         outcomes = crossProduct actions
         utilities = map (\outcome -> playerUtility (utility g (Pos outcome n)) player) outcomes
         weightedUtilities = zipWith weightUtility outcomes utilities
-        weightUtility outcome utility = utility * (product (zipWith (\strategy i -> strategy !! (i - 1)) strategies outcome))
+        weightUtility outcome util = util * (product (zipWith (\strategy i -> strategy !! (i - 1)) strategies outcome))
         
 ---------------------- Constructing Games ----------------------
         
@@ -172,7 +172,7 @@ dominated game player action = val < 1
           (Pos ds n') -> case yank (player - 1) ds of (a,b) -> (a,b,n')
                                                      
 outcomeDominated :: (NaturalNumber n, Ord n) => Game n -> Pos Int n -> Bool
-outcomeDominated g@(Game arr) outcome = any outcomeDominated' players
+outcomeDominated g outcome = any outcomeDominated' players
   where 
     (dimensions, players) = case dims g of (Pos ds n) -> (ds, [1..(naturalNumberAsInt n)])
     outcomeDominated' player = any (\pos -> (playerUtility (utility g pos) player) > outcomeUtil) allOutcomes
@@ -266,15 +266,15 @@ stackelbergMixedCommitment game leader =
 
 -- | Find all pure strategy Nash equilibria
 pureNash :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> [Pos Action (SuccessorTo n)]
-pureNash g@(Game arr) = equilibriumOutcomes
+pureNash g = equilibriumOutcomes
   where (Pos dimensions n) = dims g
         actions = map (\x -> [1..x]) dimensions
         -- outcomes = map (\x -> Pos x n) (crossProduct actions)
-        (Pos dominated _) = iteratedDominance g
+        (Pos dominatedActions _) = iteratedDominance g
         
         -- actions that are not dominated. 
         -- outcomes, however, might still be dominated, i.e someone has incentive to unilaterally deviate!
-        undominated = zipWith (\as ds -> as \\ ds) actions dominated 
+        undominated = zipWith (\as ds -> as \\ ds) actions dominatedActions 
         outcomes = map (flip Pos n) (crossProduct undominated)
         
         equilibriumOutcomes = filter (not . (outcomeDominated g)) outcomes
