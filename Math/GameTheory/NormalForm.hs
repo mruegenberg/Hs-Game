@@ -71,14 +71,17 @@ replaceAt _ [] _ = []
 replaceAt y (_:xs) 0 = y:xs
 replaceAt y (x:xs) i = x : (replaceAt y xs (i - 1))
 
--- FIXME: this is wrong
 -- | Expected utility of some player for a strategy profile of all players
 expectedUtility :: (NaturalNumber n, Ord n) => Game n -> Player -> Pos Strategy n -> Double
-expectedUtility g player (Pos strategies _) = go 0 (defaultPos g) strategies
-  where -- go :: (NaturalNumber n, Ord n) => Pos Int n -> [t] -> Double
-        go _ pos [] = playerUtility (utility g pos) player
-        go j pos (x:xs) = sum $ map (\(i,y) -> y * (go (j + 1) (replacePos pos j i) xs)) (zip [1..] x) -- FIXME: replacePos pos j (i + 1)) xs should probably have i instead of i+1?
-        
+expectedUtility g player (Pos strategies _) = sum weightedUtilities
+  where (Pos dimensions n) = dims g
+        actions :: [[Action]]
+        actions = map (\x -> [1..x]) dimensions
+        outcomes :: [[Action]]
+        outcomes = crossProduct actions
+        utilities = map (\outcome -> playerUtility (utility g (Pos outcome n)) player) outcomes
+        weightedUtilities = zipWith weightUtility outcomes utilities
+        weightUtility outcome utility = utility * (product (zipWith (\strategy i -> strategy !! (i - 1)) strategies outcome))
         
 ---------------------- Constructing Games ----------------------
         
@@ -129,36 +132,7 @@ maxiMin game player = (secLevel, probabilities)
         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)                                                 
         zeros     = repeat 0
         
------------ Dominance -----------
--- | Checks if an action of a player is dominated in the game
--- dominated :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Player -> Action -> Bool
--- dominated game player action = val < 1
---   where (val, _) = case simplex problem constraints [] of
---           Optimal r -> r
---           _ -> undefined
-          
---         -- variables in the LP are s_i(b_i), and their sum should be minimized
---         problem = Minimize (take ownD $ repeat 1)
-        
---         constraints = Dense $
---                       (map (nonzero ownD) [1..ownD]) ++ -- s_i(b_i) >= 0 forall b_i
---                       (map constraint otherDs)
-                      
---         nonzero d i = ((take i zeros) ++ (1 : (take (d - i) zeros))) :=>: 0
---         zeros       = repeat 0
-
---         constraint pos' = (map (\ownIdx -> playerUtility (utility game (otherPos ownIdx)) player) [1..ownD]) -- FIXME: a bug here... used to be pos instead of (otherPos ownIdx)
---                           :=>: (playerUtility (utility game pos) player)
---             where 
---               pos = insertPos pos' player action
---               otherPos j = insertPos pos' player j
-                      
---         go [] = [[]]
---         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)  
---         otherDs           = map (\d -> Pos d (predecessorOf n)) $ go $ map (\i -> [1..i]) otherDs'
---         (ownD,otherDs',n) = case dims game of
---           (Pos ds n') -> case yank (player - 1) ds of (a,b) -> (a,b,n')
-                        
+----------- Dominance -----------                        
 -- | Checks if an action of a player is dominated in the game
 dominated :: (NaturalNumber n, Ord n) => Game (SuccessorTo n) -> Player -> Action -> Bool
 dominated game player action = val < 1
@@ -191,7 +165,6 @@ dominated game player action = val < 1
             ownActions = [1..ownD]
             
         -- FIXME: the following lines were just copy-pasted. explain them.
-        -- FIXME: infinite loop here?
         go [] = [[]]
         go (x:xs) = concatMap (\y -> map (\z -> z : y) x) (go xs)  
         otherDs           = map (\d -> Pos d (predecessorOf n)) $ go $ map (\i -> [1..i]) otherDs'
